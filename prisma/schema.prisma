@@ -1,0 +1,144 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id                      Int       @id @default(autoincrement())
+  email                   String    @unique
+  passwordHash            String
+  fullName                String
+  role                    String    @default("owner")
+  isEmailVerified         Boolean   @default(false)
+  emailVerificationToken  String?
+  emailVerificationExpiry DateTime?
+  passwordResetToken      String?
+  passwordResetExpiry     DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  startup       Startup?
+  subscriptions UserSubscription[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model Startup {
+  id             Int       @id @default(autoincrement())
+  userId         Int       @unique
+  name           String
+  slug           String    @unique
+  description    String?
+  approvalStatus String    @default("pending")
+  approvedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user          User                     @relation(fields: [userId], references: [id])
+  brands        Brand[]
+  website       Website?
+  brandRequests BrandGenerationRequest[]
+
+  @@map("startups")
+}
+
+model Brand {
+  id        Int      @id @default(autoincrement())
+  startupId Int
+  assets    String
+  createdAt DateTime @default(now())
+
+  startup Startup @relation(fields: [startupId], references: [id])
+
+  @@map("brands")
+}
+
+model BrandGenerationRequest {
+  id          Int       @id @default(autoincrement())
+  startupId   Int
+  description String
+  status      String    @default("pending")
+  result      String?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  startup Startup @relation(fields: [startupId], references: [id])
+
+  @@map("brand_generation_requests")
+}
+
+model Website {
+  id           Int       @id @default(autoincrement())
+  startupId    Int       @unique
+  isPublished  Boolean   @default(false)
+  publishedUrl String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  startup  Startup          @relation(fields: [startupId], references: [id])
+  sections WebsiteSection[]
+
+  @@map("websites")
+}
+
+model WebsiteSection {
+  id          Int      @id @default(autoincrement())
+  websiteId   Int
+  sectionType String
+  isVisible   Boolean  @default(true)
+  orderIndex  Int
+  content     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  website Website @relation(fields: [websiteId], references: [id])
+
+  @@map("website_sections")
+}
+
+model Plan {
+  id           Int      @id @default(autoincrement())
+  name         String   @unique
+  price        Decimal
+  durationDays Int
+  limits       String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  subscriptions UserSubscription[]
+
+  @@map("plans")
+}
+
+model UserSubscription {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  planId    Int
+  status    String
+  startedAt DateTime
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  plan Plan @relation(fields: [planId], references: [id])
+
+  @@map("user_subscriptions")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}

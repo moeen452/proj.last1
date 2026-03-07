@@ -1,0 +1,103 @@
+@baseUrl = http://localhost:3000/api/v1
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..
+###
+### 1. اختبار السيرفر
+###
+GET http://localhost:3000/
+Accept-Language: en
+
+### 2. التسجيل
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+Accept-Language: ar
+
+{
+  "fullName": "محمد",
+  "email": "new@test.com",
+  "password": "123456"
+}
+
+###
+### 3. التسجيل بالإنجليزي - إيميل مكرر
+###
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+Accept-Language: en
+
+{
+  "fullName": "Mohammed",
+  "email": "test@test.com",
+  "password": "123456"
+}
+
+###
+### 4. تسجيل الدخول
+###
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+Accept-Language: en
+
+{
+  "email": "test@test.com",
+  "password": "123456"
+}
+
+###
+### 5. بيانات المستخدم - يحتاج token
+###
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}
+Accept-Language: ar
+
+###
+### 6. دخول بكلمة مرور خاطئة
+###
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+Accept-Language: ar
+
+{
+  "email": "test@test.com",
+  "password": "wrongpass"
+}
+
+###
+### 7. إنشاء startup
+###
+POST {{baseUrl}}/startups
+Content-Type: application/json
+Authorization: Bearer {{token}}
+Accept-Language: ar
+
+{
+  "name": "شركتي الناشئة",
+  "description": "وصف الشركة"
+}
+
+###
+### 8. جلب startup الخاص بي
+###
+GET {{baseUrl}}/startups/my
+Authorization: Bearer {{token}}
+Accept-Language: ar
+
+###
+### 9. قائمة الشركات للجمهور
+###
+GET {{baseUrl}}/startups
+Accept-Language: en
+
+###
+### 10. إنشاء startup مرة ثانية - خطأ متوقع
+###
+POST {{baseUrl}}/startups
+Content-Type: application/json
+Authorization: Bearer {{token}}
+Accept-Language: en
+
+{
+  "name": "Another Startup",
+  "description": "Should fail"
+}
+
+###
