@@ -15,10 +15,11 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(cookieParser());
 
-// ── Routes (نضيف كل route بعد إنشاء ملفاتها) ────
-app.use('/api/v1/auth',     require('../auth/auth.router'));
-app.use('/api/v1/startups', require('../startup/startup.router'));
-// app.use('/api/v1/brands',   require('../brands/brands.router'));
+// ── Routes ─────────────────────────────────────
+const modules = require('./modules');
+app.use('/api/v1/auth',     modules.auth);
+app.use('/api/v1/startups', modules.startup);
+// app.use('/api/v1/brands',   modules.brands);
 
 // ── Health Check ─────────────────────────────────
 app.get('/', (req, res) => {
@@ -46,7 +47,4 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`✅ Server running: http://localhost:${PORT}`);
-});
+module.exports = app;
