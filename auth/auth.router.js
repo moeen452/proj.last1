@@ -3,13 +3,7 @@ const router     = express.Router();
 const controller = require('./auth.controller');
 const { authenticate } = require('../common/auth.middleware');
 const { body, validationResult } = require('express-validator');
-
-// ─── أداة تلقائية لإرسال الأخطاء ─────────────────
-function asyncHandler(fn) {
-    return function (req, res, next) {
-        Promise.resolve(fn(req, res, next)).catch(next);
-    };
-}
+const asyncHandler = require('../common/asyncHandler');
 
 // ─── أداة التحقق من البيانات ──────────────────────
 function validateRequest(validations) {
