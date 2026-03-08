@@ -1,379 +1,109 @@
-############################################
+﻿############################################
 # 🧪 اختبار API الكامل - Phase 1
 # تاريخ: 2026-03-08
 # الملف: test.http (REST Client)
 ############################################
 
 @baseUrl = http://localhost:3000/api/v1
-@email = user_test_@timestamp@.com
-@password = Password123
-@fullName = محمد أحمد
-@verificatonToken = 
-@accessToken = 
-@refreshToken = 
-@startupId = 1
 
 ############################################
-# ✅ 1. اختبار السيرفر - هل يعمل؟
+# ✅ اختبارات المرحلة 1 + 2
 ############################################
+
+### 1. اختبار السيرفر
 GET http://localhost:3000/
 Accept-Language: ar
 
-### النتيجة المتوقعة:
-### {
-###   "success": true,
-###   "message": "API is running ✅"
-### }
-
-############################################
-# 🔐 المرحلة 1: AUTH (العمليات 1-6)
-############################################
-
-###
-### ✅ 1. REGISTER - التسجيل الجديد
-### تفاصيل: إنشاء حساب جديد بـ fullName + email + password
-### النتيجة: المستخدم ينُشأ ويظهر رابط التحقق في Terminal
-### ⚠️ المهم: انسخ الرمز من Terminal لاستخدامه في verify-email
-###
+### 2. REGISTER - التسجيل الجديد
 POST {{baseUrl}}/auth/register
 Content-Type: application/json
 Accept-Language: ar
 
 {
-  "fullName": "{{fullName}}",
+  "fullName": "محمد أحمد",
   "email": "moeen_test_001@gmail.com",
-  "password": "{{password}}"
+  "password": "Password123"
 }
 
-<> tests/register.test.http
-### النتيجة المتوقعة (201):
-### {
-###   "success": true,
-###   "data": {
-###     "user": {
-###       "id": 1,
-###       "email": "moeen_test_001@gmail.com",
-###       "fullName": "محمد أحمد",
-###       "role": "owner"
-###     },
-###     "message": "تم التسجيل. تحقق من بريدك."
-###   }
-### }
-
-###
-### ✅ 2. VERIFY EMAIL - تأكيد الإيميل
-### تفاصيل: استخدم الرمز من Terminal
-### النتيجة: isEmailVerified = true
-### ⚠️ ضع الرمز من Terminal هنا:
-###
-GET {{baseUrl}}/auth/verify-email?token=PAST_TOKEN_FROM_TERMINAL_HERE
+### 3. VERIFY EMAIL - تأكيد الإيميل
+### ضع الرمز من Terminal بدل TOKEN
+GET {{baseUrl}}/auth/verify-email?token=PASTE_TOKEN_HERE
 Accept-Language: ar
 
-<> tests/verify.test.http
-### النتيجة المتوقعة (200):
-### {
-###   "success": true,
-###   "data": {
-###     "message": "تم تأكيد الإيميل ✅"
-###   }
-### }
-
-###
-### ✅ 3. LOGIN - تسجيل الدخول
-### تفاصيل: استخدم الإيميل وكلمة المرور
-### النتيجة: accessToken + refreshToken (في Cookie)
-### ⚠️ المهم: احفظ accessToken للاستخدام في باقي الطلبات
-###
+### 4. LOGIN - تسجيل الدخول
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 Accept-Language: ar
 
 {
   "email": "moeen_test_001@gmail.com",
-  "password": "{{password}}"
+  "password": "Password123"
 }
 
-<> tests/login.test.http
-### النتيجة المتوقعة (200):
-### {
-###   "success": true,
-###   "data": {
-###     "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-###     "user": {
-###       "id": 1,
-###       "email": "moeen_test_001@gmail.com",
-###       "fullName": "محمد أحمد",
-###       "role": "owner"
-###     }
-###   }
-### }
-### ثم نسخ التوكن هنا في الأعلى: @accessToken = ...
-
-###
-### ✅ 4. GET ME - بيانات الملف الشخصي
-### تفاصيل: احصل على بيانات المستخدم الحالي
-### الحماية: يحتاج Bearer Token
-###
+### 5. GET ME - بيانات المستخدم
 GET {{baseUrl}}/auth/me
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiZW1haWwiOiJtb2Vlbl90ZXN0XzAwMUBnbWFpbC5jb20iLCJyb2xlIjoib3duZXIiLCJpYXQiOjE3NDEwMTI0NzgsImV4cCI6MTc0MTAxMzM3OH0.Ybl4RFW_qJ3Jz2p6QKjDhzMD-JDlCxvZwKmQ8fP5Fqc
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJtb2hzaW5fNTE1MTAxNzMwQHRlc3QuY29tIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzcyOTgzMDA1LCJleHAiOjE3NzI5ODM5MDV9.Adpe-sa7Ajt1oe00oV9c0tdEOkloInlNOoxllIYEfhU
 Accept-Language: ar
 
-<> tests/getMe.test.http
-### النتيجة المتوقعة (200):
-### {
-###   "success": true,
-###   "data": {
-###     "user": {
-###       "id": 1,
-###       "email": "moeen_test_001@gmail.com",
-###       "fullName": "محمد أحمد",
-###       "role": "owner",
-###       "createdAt": "2026-03-08T15:00:00.000Z"
-###     }
-###   }
-### }
-
-###
-### ✅ 5. REFRESH TOKEN - تجديد الجلسة
-### تفاصيل: عند انتهاء accessToken (15 دقيقة)
-### يمكن الحصول على token جديد بالـ refreshToken
-### النتيجة: accessToken جديد
-###
+### 6. REFRESH TOKEN
 POST {{baseUrl}}/auth/refresh
 Accept-Language: ar
 
-<> tests/refresh.test.http
-### النتيجة المتوقعة (200):
-### {
-###   "success": true,
-###   "data": {
-###     "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-###   }
-### }
-
-###
-### ✅ 6. LOGOUT - الخروج
-### تفاصيل: حذف الـ Cookie وإنهاء الجلسة
-### النتيجة: تم الخروج
-###
+### 7. LOGOUT
 POST {{baseUrl}}/auth/logout
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiZW1haWwiOiJtb2Vlbl90ZXN0XzAwMUBnbWFpbC5jb20iLCJyb2xlIjoib3duZXIiLCJpYXQiOjE3NDEwMTI0NzgsImV4cCI6MTc0MTAxMzM3OH0.Ybl4RFW_qJ3Jz2p6QKjDhzMD-JDlCxvZwKmQ8fP5Fqc
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJtb2hzaW5fNTE1MTAxNzMwQHRlc3QuY29tIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzcyOTgzMDA1LCJleHAiOjE3NzI5ODM5MDV9.Adpe-sa7Ajt1oe00oV9c0tdEOkloInlNOoxllIYEfhU
 Accept-Language: ar
 
-<> tests/logout.test.http
-### النتيجة المتوقعة (200):
-### {
-###   "success": true,
-###   "data": {
-###     "message": "تم الخروج بنجاح"
-###   }
-### }
-
-############################################
-# 🚀 المرحلة 2: STARTUP (العمليات 7-10)
-############################################
-
-###
-### ✅ 7. CREATE STARTUP - إنشاء شركة ناشئة
-### تفاصيل: المستخدم ينشئ startupه الأول
-### النتيجة: startup جديد + website + sections
-### الحماية: يحتاج البقاء مسجل الدخول
-###
+### 8. CREATE STARTUP
 POST {{baseUrl}}/startups
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiZW1haWwiOiJtb2Vlbl90ZXN0XzAwMUBnbWFpbC5jb20iLCJyb2xlIjoib3duZXIiLCJpYXQiOjE3NDEwMTI0NzgsImV4cCI6MTc0MTAxMzM3OH0.Ybl4RFW_qJ3Jz2p6QKjDhzMD-JDlCxvZwKmQ8fP5Fqc
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJtb2hzaW5fNTE1MTAxNzMwQHRlc3QuY29tIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzcyOTgzMDA1LCJleHAiOjE3NzI5ODM5MDV9.Adpe-sa7Ajt1oe00oV9c0tdEOkloInlNOoxllIYEfhU
 Accept-Language: ar
 
 {
-  "name": "تطبيق توصيل الطعام",
-  "description": "تطبيق توصيل الطعام والمشروبات للمدينة"
+  "name": "تطبيق التوصيل",
+  "description": "أفضل تطبيق توصيل في المدينة"
 }
 
-<> tests/createStartup.test.http
-### النتيجة المتوقعة (201):
-### {
-###   "success": true,
-###   "data": {
-###     "startup": {
-###       "id": 1,
-###       "userId": 2,
-###       "name": "تطبيق توصيل الطعام",
-###       "slug": "tatbiq-tawsil-al-taam",
-###       "description": "تطبيق توصيل الطعام والمشروبات للمدينة",
-###       "approvalStatus": "pending",
-###       "createdAt": "2026-03-08T15:10:00.000Z"
-###     }
-###   }
-### }
-
-###
-### ✅ 8. GET MY STARTUP - جلب بيانات startupي
-### تفاصيل: احصل على startup + website + sections
-### النتيجة: البيانات الكاملة
-###
+### 9. GET MY STARTUP
 GET {{baseUrl}}/startups/my
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiZW1haWwiOiJtb2Vlbl90ZXN0XzAwMUBnbWFpbC5jb20iLCJyb2xlIjoib3duZXIiLCJpYXQiOjE3NDEwMTI0NzgsImV4cCI6MTc0MTAxMzM3OH0.Ybl4RFW_qJ3Jz2p6QKjDhzMD-JDlCxvZwKmQ8fP5Fqc
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJtb2hzaW5fNTE1MTAxNzMwQHRlc3QuY29tIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzcyOTgzMDA1LCJleHAiOjE3NzI5ODM5MDV9.Adpe-sa7Ajt1oe00oV9c0tdEOkloInlNOoxllIYEfhU
 Accept-Language: ar
 
-<> tests/getMyStartup.test.http
-### النتيجة المتوقعة (200):
-### {
-###   "success": true,
-###   "data": {
-###     "startup": {
-###       "id": 1,
-###       "name": "تطبيق توصيل الطعام",
-###       "website": {
-###         "sections": [
-###           { "sectionType": "hero", ... },
-###           { "sectionType": "services", ... }
-###         ]
-###       }
-###     }
-###   }
-### }
-
-###
-### ✅ 9. GET ALL STARTUPS - قائمة الشركات للجمهور
-### تفاصيل: ظهر الشركات المعتمدة فقط
-### Pagination: page + limit
-### Search: أبحث عن اسم
-###
-GET {{baseUrl}}/startups?page=1&limit=10&search=توصيل
+### 10. GET ALL STARTUPS
+GET {{baseUrl}}/startups?page=1&limit=10
 Accept-Language: ar
 
-<> tests/getAllStartups.test.http
-### النتيجة المتوقعة (200):
-### {
-###   "success": true,
-###   "data": [
-###     {
-###       "id": 1,
-###       "name": "تطبيق توصيل الطعام",
-###       "slug": "tatbiq-tawsil-al-taam"
-###     }
-###   ],
-###   "meta": {
-###     "page": 1,
-###     "limit": 10,
-###     "total": 5,
-###     "pages": 1
-###   }
-### }
-
-###
-### ✅ 10. APPROVE STARTUP - موافقة الأدمن
-### تفاصيل: فقط مستخدم بدور admin
-### النتيجة: approvalStatus = approved
-### ⚠️ يحتاج account بدور admin
-###
+### 11. APPROVE STARTUP (Admin only)
 PATCH {{baseUrl}}/startups/1/approve
 Authorization: Bearer ADMIN_TOKEN_HERE
 Accept-Language: ar
 
-<> tests/approveStartup.test.http
-### النتيجة المتوقعة (200):
-### {
-###   "success": true,
-###   "data": {
-###     "startup": {
-###       "approvalStatus": "approved",
-###       "approvedAt": "2026-03-08T15:15:00.000Z"
-###     }
-###   }
-### }
-
 ############################################
-# 🐛 اختبارات الأخطاء
+# ❌ اختبارات الأخطاء
 ############################################
 
-###
-### ❌ TEST: إيميل مكرر
-###
+### Error: Duplicate Email
 POST {{baseUrl}}/auth/register
 Content-Type: application/json
 Accept-Language: ar
 
 {
-  "fullName": "محمد",
+  "fullName": "أحمد محمد",
   "email": "duplicate@test.com",
   "password": "Password123"
 }
 
-###
-### ❌ TEST: إيميل خاطئ
-###
+### Error: Wrong Password
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 Accept-Language: ar
 
 {
-  "email": "wrong@test.com",
-  "password": "Password123"
+  "email": "moeen_test_001@gmail.com",
+  "password": "WrongPassword"
 }
 
-###
-### ❌ TEST: بدون token
-###
+### Error: No Token
 GET {{baseUrl}}/auth/me
 Accept-Language: ar
-
-###
-### ❌ TEST: token منتهي الصلاحية
-###
-GET {{baseUrl}}/auth/me
-Authorization: Bearer invalid_token_here
-Accept-Language: ar
-
-###
-### 6. دخول بكلمة مرور خاطئة
-###
-POST {{baseUrl}}/auth/login
-Content-Type: application/json
-Accept-Language: ar
-
-{
-  "email": "test@test.com",
-  "password": "wrongpass"
-}
-
-###
-### 7. إنشاء startup
-###
-POST {{baseUrl}}/startups
-Content-Type: application/json
-Authorization: Bearer {{token}}
-Accept-Language: ar
-
-{
-  "name": "شركتي الناشئة",
-  "description": "وصف الشركة"
-}
-
-###
-### 8. جلب startup الخاص بي
-###
-GET {{baseUrl}}/startups/my
-Authorization: Bearer {{token}}
-Accept-Language: ar
-
-###
-### 9. قائمة الشركات للجمهور
-###
-GET {{baseUrl}}/startups
-Accept-Language: en
-
-###
-### 10. إنشاء startup مرة ثانية - خطأ متوقع
-###
-POST {{baseUrl}}/startups
-Content-Type: application/json
-Authorization: Bearer {{token}}
-Accept-Language: en
-
-{
-  "name": "Another Startup",
-  "description": "Should fail"
-}
-
-###
