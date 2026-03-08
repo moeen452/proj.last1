@@ -1,52 +1,328 @@
-@baseUrl = http://localhost:3000/api/v1
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..
-###
-### 1. اختبار السيرفر
-###
-GET http://localhost:3000/
-Accept-Language: en
+############################################
+# 🧪 اختبار API الكامل - Phase 1
+# تاريخ: 2026-03-08
+# الملف: test.http (REST Client)
+############################################
 
-### 2. التسجيل
+@baseUrl = http://localhost:3000/api/v1
+@email = user_test_@timestamp@.com
+@password = Password123
+@fullName = محمد أحمد
+@verificatonToken = 
+@accessToken = 
+@refreshToken = 
+@startupId = 1
+
+############################################
+# ✅ 1. اختبار السيرفر - هل يعمل؟
+############################################
+GET http://localhost:3000/
+Accept-Language: ar
+
+### النتيجة المتوقعة:
+### {
+###   "success": true,
+###   "message": "API is running ✅"
+### }
+
+############################################
+# 🔐 المرحلة 1: AUTH (العمليات 1-6)
+############################################
+
+###
+### ✅ 1. REGISTER - التسجيل الجديد
+### تفاصيل: إنشاء حساب جديد بـ fullName + email + password
+### النتيجة: المستخدم ينُشأ ويظهر رابط التحقق في Terminal
+### ⚠️ المهم: انسخ الرمز من Terminal لاستخدامه في verify-email
+###
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+Accept-Language: ar
+
+{
+  "fullName": "{{fullName}}",
+  "email": "moeen_test_001@gmail.com",
+  "password": "{{password}}"
+}
+
+<> tests/register.test.http
+### النتيجة المتوقعة (201):
+### {
+###   "success": true,
+###   "data": {
+###     "user": {
+###       "id": 1,
+###       "email": "moeen_test_001@gmail.com",
+###       "fullName": "محمد أحمد",
+###       "role": "owner"
+###     },
+###     "message": "تم التسجيل. تحقق من بريدك."
+###   }
+### }
+
+###
+### ✅ 2. VERIFY EMAIL - تأكيد الإيميل
+### تفاصيل: استخدم الرمز من Terminal
+### النتيجة: isEmailVerified = true
+### ⚠️ ضع الرمز من Terminal هنا:
+###
+GET {{baseUrl}}/auth/verify-email?token=PAST_TOKEN_FROM_TERMINAL_HERE
+Accept-Language: ar
+
+<> tests/verify.test.http
+### النتيجة المتوقعة (200):
+### {
+###   "success": true,
+###   "data": {
+###     "message": "تم تأكيد الإيميل ✅"
+###   }
+### }
+
+###
+### ✅ 3. LOGIN - تسجيل الدخول
+### تفاصيل: استخدم الإيميل وكلمة المرور
+### النتيجة: accessToken + refreshToken (في Cookie)
+### ⚠️ المهم: احفظ accessToken للاستخدام في باقي الطلبات
+###
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+Accept-Language: ar
+
+{
+  "email": "moeen_test_001@gmail.com",
+  "password": "{{password}}"
+}
+
+<> tests/login.test.http
+### النتيجة المتوقعة (200):
+### {
+###   "success": true,
+###   "data": {
+###     "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+###     "user": {
+###       "id": 1,
+###       "email": "moeen_test_001@gmail.com",
+###       "fullName": "محمد أحمد",
+###       "role": "owner"
+###     }
+###   }
+### }
+### ثم نسخ التوكن هنا في الأعلى: @accessToken = ...
+
+###
+### ✅ 4. GET ME - بيانات الملف الشخصي
+### تفاصيل: احصل على بيانات المستخدم الحالي
+### الحماية: يحتاج Bearer Token
+###
+GET {{baseUrl}}/auth/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiZW1haWwiOiJtb2Vlbl90ZXN0XzAwMUBnbWFpbC5jb20iLCJyb2xlIjoib3duZXIiLCJpYXQiOjE3NDEwMTI0NzgsImV4cCI6MTc0MTAxMzM3OH0.Ybl4RFW_qJ3Jz2p6QKjDhzMD-JDlCxvZwKmQ8fP5Fqc
+Accept-Language: ar
+
+<> tests/getMe.test.http
+### النتيجة المتوقعة (200):
+### {
+###   "success": true,
+###   "data": {
+###     "user": {
+###       "id": 1,
+###       "email": "moeen_test_001@gmail.com",
+###       "fullName": "محمد أحمد",
+###       "role": "owner",
+###       "createdAt": "2026-03-08T15:00:00.000Z"
+###     }
+###   }
+### }
+
+###
+### ✅ 5. REFRESH TOKEN - تجديد الجلسة
+### تفاصيل: عند انتهاء accessToken (15 دقيقة)
+### يمكن الحصول على token جديد بالـ refreshToken
+### النتيجة: accessToken جديد
+###
+POST {{baseUrl}}/auth/refresh
+Accept-Language: ar
+
+<> tests/refresh.test.http
+### النتيجة المتوقعة (200):
+### {
+###   "success": true,
+###   "data": {
+###     "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+###   }
+### }
+
+###
+### ✅ 6. LOGOUT - الخروج
+### تفاصيل: حذف الـ Cookie وإنهاء الجلسة
+### النتيجة: تم الخروج
+###
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiZW1haWwiOiJtb2Vlbl90ZXN0XzAwMUBnbWFpbC5jb20iLCJyb2xlIjoib3duZXIiLCJpYXQiOjE3NDEwMTI0NzgsImV4cCI6MTc0MTAxMzM3OH0.Ybl4RFW_qJ3Jz2p6QKjDhzMD-JDlCxvZwKmQ8fP5Fqc
+Accept-Language: ar
+
+<> tests/logout.test.http
+### النتيجة المتوقعة (200):
+### {
+###   "success": true,
+###   "data": {
+###     "message": "تم الخروج بنجاح"
+###   }
+### }
+
+############################################
+# 🚀 المرحلة 2: STARTUP (العمليات 7-10)
+############################################
+
+###
+### ✅ 7. CREATE STARTUP - إنشاء شركة ناشئة
+### تفاصيل: المستخدم ينشئ startupه الأول
+### النتيجة: startup جديد + website + sections
+### الحماية: يحتاج البقاء مسجل الدخول
+###
+POST {{baseUrl}}/startups
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiZW1haWwiOiJtb2Vlbl90ZXN0XzAwMUBnbWFpbC5jb20iLCJyb2xlIjoib3duZXIiLCJpYXQiOjE3NDEwMTI0NzgsImV4cCI6MTc0MTAxMzM3OH0.Ybl4RFW_qJ3Jz2p6QKjDhzMD-JDlCxvZwKmQ8fP5Fqc
+Accept-Language: ar
+
+{
+  "name": "تطبيق توصيل الطعام",
+  "description": "تطبيق توصيل الطعام والمشروبات للمدينة"
+}
+
+<> tests/createStartup.test.http
+### النتيجة المتوقعة (201):
+### {
+###   "success": true,
+###   "data": {
+###     "startup": {
+###       "id": 1,
+###       "userId": 2,
+###       "name": "تطبيق توصيل الطعام",
+###       "slug": "tatbiq-tawsil-al-taam",
+###       "description": "تطبيق توصيل الطعام والمشروبات للمدينة",
+###       "approvalStatus": "pending",
+###       "createdAt": "2026-03-08T15:10:00.000Z"
+###     }
+###   }
+### }
+
+###
+### ✅ 8. GET MY STARTUP - جلب بيانات startupي
+### تفاصيل: احصل على startup + website + sections
+### النتيجة: البيانات الكاملة
+###
+GET {{baseUrl}}/startups/my
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiZW1haWwiOiJtb2Vlbl90ZXN0XzAwMUBnbWFpbC5jb20iLCJyb2xlIjoib3duZXIiLCJpYXQiOjE3NDEwMTI0NzgsImV4cCI6MTc0MTAxMzM3OH0.Ybl4RFW_qJ3Jz2p6QKjDhzMD-JDlCxvZwKmQ8fP5Fqc
+Accept-Language: ar
+
+<> tests/getMyStartup.test.http
+### النتيجة المتوقعة (200):
+### {
+###   "success": true,
+###   "data": {
+###     "startup": {
+###       "id": 1,
+###       "name": "تطبيق توصيل الطعام",
+###       "website": {
+###         "sections": [
+###           { "sectionType": "hero", ... },
+###           { "sectionType": "services", ... }
+###         ]
+###       }
+###     }
+###   }
+### }
+
+###
+### ✅ 9. GET ALL STARTUPS - قائمة الشركات للجمهور
+### تفاصيل: ظهر الشركات المعتمدة فقط
+### Pagination: page + limit
+### Search: أبحث عن اسم
+###
+GET {{baseUrl}}/startups?page=1&limit=10&search=توصيل
+Accept-Language: ar
+
+<> tests/getAllStartups.test.http
+### النتيجة المتوقعة (200):
+### {
+###   "success": true,
+###   "data": [
+###     {
+###       "id": 1,
+###       "name": "تطبيق توصيل الطعام",
+###       "slug": "tatbiq-tawsil-al-taam"
+###     }
+###   ],
+###   "meta": {
+###     "page": 1,
+###     "limit": 10,
+###     "total": 5,
+###     "pages": 1
+###   }
+### }
+
+###
+### ✅ 10. APPROVE STARTUP - موافقة الأدمن
+### تفاصيل: فقط مستخدم بدور admin
+### النتيجة: approvalStatus = approved
+### ⚠️ يحتاج account بدور admin
+###
+PATCH {{baseUrl}}/startups/1/approve
+Authorization: Bearer ADMIN_TOKEN_HERE
+Accept-Language: ar
+
+<> tests/approveStartup.test.http
+### النتيجة المتوقعة (200):
+### {
+###   "success": true,
+###   "data": {
+###     "startup": {
+###       "approvalStatus": "approved",
+###       "approvedAt": "2026-03-08T15:15:00.000Z"
+###     }
+###   }
+### }
+
+############################################
+# 🐛 اختبارات الأخطاء
+############################################
+
+###
+### ❌ TEST: إيميل مكرر
+###
 POST {{baseUrl}}/auth/register
 Content-Type: application/json
 Accept-Language: ar
 
 {
   "fullName": "محمد",
-  "email": "new@test.com",
-  "password": "123456"
+  "email": "duplicate@test.com",
+  "password": "Password123"
 }
 
 ###
-### 3. التسجيل بالإنجليزي - إيميل مكرر
-###
-POST {{baseUrl}}/auth/register
-Content-Type: application/json
-Accept-Language: en
-
-{
-  "fullName": "Mohammed",
-  "email": "test@test.com",
-  "password": "123456"
-}
-
-###
-### 4. تسجيل الدخول
+### ❌ TEST: إيميل خاطئ
 ###
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
-Accept-Language: en
+Accept-Language: ar
 
 {
-  "email": "test@test.com",
-  "password": "123456"
+  "email": "wrong@test.com",
+  "password": "Password123"
 }
 
 ###
-### 5. بيانات المستخدم - يحتاج token
+### ❌ TEST: بدون token
 ###
 GET {{baseUrl}}/auth/me
-Authorization: Bearer {{token}}
+Accept-Language: ar
+
+###
+### ❌ TEST: token منتهي الصلاحية
+###
+GET {{baseUrl}}/auth/me
+Authorization: Bearer invalid_token_here
 Accept-Language: ar
 
 ###

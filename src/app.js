@@ -27,7 +27,16 @@ app.get('/', (req, res) => {
 
 // ── Error Handler ─────────────────────────────────
 app.use((err, req, res, next) => {
-  console.error('❌', err.message);
+  const isDev = process.env.NODE_ENV !== 'production';
+  
+  if (isDev) {
+    console.error(`\n${'─'.repeat(60)}`);
+    console.error(`❌ Error: ${err.message}`);
+    console.error(`📍 Code: ${err.code || 'UNKNOWN'}`);
+    console.error(`🔗 URL: ${req.method} ${req.path}`);
+    console.error(`${'─'.repeat(60)}\n`);
+  }
+
   res.status(err.statusCode || 500).json({
     success: false,
     error: {

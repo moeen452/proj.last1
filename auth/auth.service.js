@@ -35,7 +35,13 @@ const register = async ({ fullName, email, password }, lang) => {
   });
 
   // ⑤ طبع رابط التحقق في الـ terminal (مؤقتاً)
-  console.log(`\n🔗 Verify: http://localhost:3000/api/v1/auth/verify-email?token=${verificationToken}\n`);
+  const verifyUrl = `http://localhost:3000/api/v1/auth/verify-email?token=${verificationToken}`;
+  console.log(`\n${'═'.repeat(80)}`);
+  console.log(`📧 تم إنشاء حساب جديد: ${email}`);
+  console.log(`🔗 رابط التحقق:`);
+  console.log(`   ${verifyUrl}`);
+  console.log(`⏱️  صلاحية الرمز: 24 ساعة`);
+  console.log(`${'═'.repeat(80)}\n`);
 
   return user;
 };
@@ -53,6 +59,11 @@ const verifyEmail = async (token, lang) => {
   });
 
   if (!user) {
+    // للـ debugging: اطبع الرمز المرسل
+    console.log(`❌ رمز التحقق فاشل:`);
+    console.log(`   الرمز المرسل: ${token.substring(0, 20)}...`);
+    console.log(`   الوقت الحالي: ${new Date()}`);
+    
     const err = new Error(t('INVALID_TOKEN', lang));
     err.statusCode = 400;
     err.code = 'INVALID_TOKEN';
@@ -67,6 +78,8 @@ const verifyEmail = async (token, lang) => {
       emailVerificationExpiry: null,
     }
   });
+
+  console.log(`✅ تم تأكيد الإيميل: ${user.email}`);
 
   return { message: lang === 'ar' ? 'تم تأكيد الإيميل ✅' : 'Email verified ✅' };
 };
