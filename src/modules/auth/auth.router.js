@@ -34,8 +34,16 @@ router.post('/register',
     asyncHandler(controller.register)
 );
 
-// تأكيد الإيميل
+// تأكيد الإيميل عبر رابط
 router.get('/verify-email', asyncHandler(controller.verifyEmail));
+
+// تأكيد الإيميل يدوياً (للتطوير فقط - لا تستخدمه في production)
+router.post('/dev-verify',
+    validateRequest([
+        body('email').isEmail().withMessage('إيميل غير صحيح'),
+    ]),
+    asyncHandler(controller.devVerify)
+);
 
 // تسجيل الدخول
 router.post('/login', 
@@ -46,13 +54,13 @@ router.post('/login',
     asyncHandler(controller.login)
 );
 
-// تجديد التوكن — من الـ Cookie مباشرة بدون validation
+// تجديد التوكن
 router.post('/refresh', asyncHandler(controller.refresh));
 
-// الخروج — يحتاج تسجيل دخول
+// الخروج
 router.post('/logout', authenticate, asyncHandler(controller.logout));
 
-// بيانات المستخدم — يحتاج تسجيل دخول
+// بيانات المستخدم
 router.get('/me', authenticate, asyncHandler(controller.getMe));
 
 module.exports = router;

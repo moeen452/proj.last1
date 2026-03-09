@@ -8,7 +8,6 @@ const prisma = new PrismaClient();
 // ════════════════════════════════════════
 const create = async (userId, { name, description }, lang) => {
 
-  // ① تحقق أن المستخدم ليس لديه startup
   const existing = await prisma.startup.findFirst({ where: { userId } });
   if (existing) {
     const err = new Error(t('STARTUP_EXISTS', lang));
@@ -17,7 +16,6 @@ const create = async (userId, { name, description }, lang) => {
     throw err;
   }
 
-  // ② أنشئ slug فريد من الاسم
   const baseSlug = name
     .toLowerCase()
     .trim()
@@ -30,7 +28,6 @@ const create = async (userId, { name, description }, lang) => {
     slug = `${baseSlug}-${counter++}`;
   }
 
-  // ③ أنشئ startup + website + أقسام في transaction
   const startup = await prisma.$transaction(async (tx) => {
 
     const newStartup = await tx.startup.create({
@@ -41,7 +38,6 @@ const create = async (userId, { name, description }, lang) => {
       data: { startupId: newStartup.id }
     });
 
-    // content محفوظ كـ String (JSON.stringify) لأن SQLite لا يدعم Json
     await tx.websiteSection.createMany({
       data: [
         { websiteId: website.id, sectionType: 'hero',     orderIndex: 0, content: JSON.stringify({ en: {}, ar: {} }) },
@@ -52,7 +48,15 @@ const create = async (userId, { name, description }, lang) => {
       ]
     });
 
-    return newStartup;
+    // أرجع startup مع website والأقسام
+    return await tx.startup.findUnique({
+      where: { id: newStartup.id },
+      include: {
+        website: {
+          include: { sections: { orderBy: { orderIndex: 'asc' } } }
+        }
+      }
+    });
   });
 
   return startup;
@@ -67,9 +71,7 @@ const findMyStartup = async (userId, lang) => {
     where: { userId },
     include: {
       website: {
-        include: {
-          sections: { orderBy: { orderIndex: 'asc' } }
-        }
+        include: { sections: { orderBy: { orderIndex: 'asc' } } }
       },
       brands: true,
     }
@@ -82,11 +84,10 @@ const findMyStartup = async (userId, lang) => {
     throw err;
   }
 
-  // حوّل content من String إلى Object عند الإرجاع
   if (startup.website?.sections) {
-    startup.website.sections = startup.website.sections.map(section => ({
-      ...section,
-      content: JSON.parse(section.content)
+    startup.website.sections = startup.website.sections.map(s => ({
+      ...s,
+      content: JSON.parse(s.content)
     }));
   }
 
@@ -94,7 +95,44 @@ const findMyStartup = async (userId, lang) => {
 };
 
 // ════════════════════════════════════════
-// FIND ALL — للجمهور
+// UPDATE — صاحب الـ startup فقط
+// ════════════════════════════════════════
+const update = async (startupId, userId, { name, description }, lang) => {
+
+  // تأكد أن الـ startup موجود
+  const startup = await prisma.startup.findUnique({
+    where: { id: Number(startupId) }
+  });
+
+  if (!startup) {
+    const err = new Error(t('STARTUP_NOT_FOUND', lang));
+    err.statusCode = 404;
+    err.code = 'STARTUP_NOT_FOUND';
+    throw err;
+  }
+
+  // تأكد أن المستخدم هو صاحب الـ startup
+  if (startup.userId !== userId) {
+    const err = new Error(t('FORBIDDEN', lang));
+    err.statusCode = 403;
+    err.code = 'FORBIDDEN';
+    throw err;
+  }
+
+  // حدّث فقط الحقول المرسلة
+  const updated = await prisma.startup.update({
+    where: { id: Number(startupId) },
+    data: {
+      ...(name        && { name }),
+      ...(description && { description }),
+    }
+  });
+
+  return updated;
+};
+
+// ════════════════════════════════════════
+// FIND ALL — للجمهور (approved فقط)
 // ════════════════════════════════════════
 const findAll = async ({ page = 1, limit = 10, search }) => {
 
@@ -128,6 +166,37 @@ const findAll = async ({ page = 1, limit = 10, search }) => {
 };
 
 // ════════════════════════════════════════
+// FIND BY SLUG — للجمهور
+// ════════════════════════════════════════
+const findBySlug = async (slug, lang) => {
+
+  const startup = await prisma.startup.findUnique({
+    where: { slug },
+    include: {
+      website: {
+        include: { sections: { orderBy: { orderIndex: 'asc' } } }
+      }
+    }
+  });
+
+  if (!startup || startup.approvalStatus !== 'approved') {
+    const err = new Error(t('STARTUP_NOT_FOUND', lang));
+    err.statusCode = 404;
+    err.code = 'STARTUP_NOT_FOUND';
+    throw err;
+  }
+
+  if (startup.website?.sections) {
+    startup.website.sections = startup.website.sections.map(s => ({
+      ...s,
+      content: JSON.parse(s.content)
+    }));
+  }
+
+  return startup;
+};
+
+// ════════════════════════════════════════
 // APPROVE — موافقة الأدمن
 // ════════════════════════════════════════
 const approve = async (startupId, lang) => {
@@ -143,12 +212,32 @@ const approve = async (startupId, lang) => {
     throw err;
   }
 
-  const updated = await prisma.startup.update({
+  return await prisma.startup.update({
     where: { id: Number(startupId) },
     data:  { approvalStatus: 'approved', approvedAt: new Date() }
   });
-
-  return updated;
 };
 
-module.exports = { create, findMyStartup, findAll, approve };
+// ════════════════════════════════════════
+// SUSPEND — تعليق الأدمن
+// ════════════════════════════════════════
+const suspend = async (startupId, lang) => {
+
+  const startup = await prisma.startup.findUnique({
+    where: { id: Number(startupId) }
+  });
+
+  if (!startup) {
+    const err = new Error(t('STARTUP_NOT_FOUND', lang));
+    err.statusCode = 404;
+    err.code = 'STARTUP_NOT_FOUND';
+    throw err;
+  }
+
+  return await prisma.startup.update({
+    where: { id: Number(startupId) },
+    data:  { approvalStatus: 'suspended' }
+  });
+};
+
+module.exports = { create, findMyStartup, update, findAll, findBySlug, approve, suspend };

@@ -11,13 +11,16 @@ const getLang = (req) => {
 // ════════════════════════════════════════
 const create = async (req, res, next) => {
   try {
-    const lang    = getLang(req);
+    const lang = getLang(req);
     const { name, description } = req.body;
 
     if (!name) {
       return res.status(400).json({
         success: false,
-        error: { message: lang === 'ar' ? 'اسم الشركة مطلوب' : 'Startup name is required' }
+        error: {
+          message: lang === 'ar' ? 'اسم الشركة مطلوب' : 'Startup name is required',
+          code: 'VALIDATION_ERROR'
+        }
       });
     }
 
@@ -38,7 +41,7 @@ const getMyStartup = async (req, res, next) => {
 };
 
 // ════════════════════════════════════════
-// GET /api/v1/startups?page=1&search=...
+// GET /api/v1/startups
 // ════════════════════════════════════════
 const getAll = async (req, res, next) => {
   try {
@@ -53,6 +56,40 @@ const getAll = async (req, res, next) => {
 };
 
 // ════════════════════════════════════════
+// GET /api/v1/startups/:slug
+// ════════════════════════════════════════
+const getBySlug = async (req, res, next) => {
+  try {
+    const lang    = getLang(req);
+    const startup = await service.findBySlug(req.params.slug, lang);
+    res.json({ success: true, data: { startup } });
+  } catch (err) { next(err); }
+};
+
+// ════════════════════════════════════════
+// PATCH /api/v1/startups/:id
+// ════════════════════════════════════════
+const updateStartup = async (req, res, next) => {
+  try {
+    const lang = getLang(req);
+    const { name, description } = req.body;
+
+    if (!name && !description) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: lang === 'ar' ? 'أرسل حقلاً واحداً على الأقل للتعديل' : 'Provide at least one field to update',
+          code: 'VALIDATION_ERROR'
+        }
+      });
+    }
+
+    const startup = await service.update(req.params.id, req.user.id, { name, description }, lang);
+    res.json({ success: true, data: { startup } });
+  } catch (err) { next(err); }
+};
+
+// ════════════════════════════════════════
 // PATCH /api/v1/startups/:id/approve
 // ════════════════════════════════════════
 const approveStartup = async (req, res, next) => {
@@ -63,4 +100,15 @@ const approveStartup = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { create, getMyStartup, getAll, approveStartup };
+// ════════════════════════════════════════
+// PATCH /api/v1/startups/:id/suspend
+// ════════════════════════════════════════
+const suspendStartup = async (req, res, next) => {
+  try {
+    const lang    = getLang(req);
+    const startup = await service.suspend(req.params.id, lang);
+    res.json({ success: true, data: { startup } });
+  } catch (err) { next(err); }
+};
+
+module.exports = { create, getMyStartup, getAll, getBySlug, updateStartup, approveStartup, suspendStartup };

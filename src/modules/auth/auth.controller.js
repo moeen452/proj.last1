@@ -2,7 +2,6 @@
 const service = require('./auth.service');
 
 // ── مساعد يقرأ اللغة من الـ Header ──────────────
-// Frontend يرسل: Accept-Language: ar  أو  Accept-Language: en
 const getLang = (req) => {
   const lang = req.headers['accept-language'];
   return lang && lang.startsWith('ar') ? 'ar' : 'en';
@@ -29,13 +28,32 @@ const register = async (req, res, next) => {
 };
 
 // ════════════════════════════════════════
-// VERIFY EMAIL
+// VERIFY EMAIL (عبر رابط)
 // ════════════════════════════════════════
 const verifyEmail = async (req, res, next) => {
   try {
     const lang   = getLang(req);
     const result = await service.verifyEmail(req.query.token, lang);
     res.json({ success: true, data: result });
+  } catch (err) { next(err); }
+};
+
+// ════════════════════════════════════════
+// DEV VERIFY (يدوي للتطوير فقط)
+// ════════════════════════════════════════
+const devVerify = async (req, res, next) => {
+  try {
+    const lang = getLang(req);
+    const { email } = req.body;
+    await service.devVerify(email, lang);
+    res.json({
+      success: true,
+      data: {
+        message: lang === 'ar'
+          ? 'تم تأكيد الإيميل بنجاح ✅'
+          : 'Email verified successfully ✅'
+      }
+    });
   } catch (err) { next(err); }
 };
 
@@ -94,4 +112,4 @@ const getMe = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { register, verifyEmail, login, refresh, logout, getMe };
+module.exports = { register, verifyEmail, devVerify, login, refresh, logout, getMe };

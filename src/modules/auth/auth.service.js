@@ -12,7 +12,6 @@ const prisma = new PrismaClient();
 // ════════════════════════════════════════
 const register = async ({ fullName, email, password }, lang) => {
 
-  // ① تحقق من تكرار الإيميل
   const exists = await prisma.user.findUnique({ where: { email } });
   if (exists) {
     const err = new Error(t('EMAIL_EXISTS', lang));
@@ -21,20 +20,21 @@ const register = async ({ fullName, email, password }, lang) => {
     throw err;
   }
 
-  // ② hash كلمة المرور
-  const passwordHash = await bcrypt.hash(password, 12);
-
-  // ③ رمز التحقق من الإيميل
+  const passwordHash      = await bcrypt.hash(password, 12);
   const verificationToken = crypto.randomBytes(32).toString('hex');
-  const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const tokenExpiry       = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-  // ④ احفظ في DB
   const user = await prisma.user.create({
-    data: { fullName, email, passwordHash, emailVerificationToken: verificationToken, emailVerificationExpiry: tokenExpiry },
+    data: {
+      fullName,
+      email,
+      passwordHash,
+      emailVerificationToken:  verificationToken,
+      emailVerificationExpiry: tokenExpiry
+    },
     select: { id: true, email: true, fullName: true, role: true }
   });
 
-  // ⑤ طبع رابط التحقق في الـ terminal (مؤقتاً)
   const verifyUrl = `http://localhost:3000/api/v1/auth/verify-email?token=${verificationToken}`;
   console.log(`\n${'═'.repeat(80)}`);
   console.log(`📧 تم إنشاء حساب جديد: ${email}`);
@@ -47,23 +47,18 @@ const register = async ({ fullName, email, password }, lang) => {
 };
 
 // ════════════════════════════════════════
-// VERIFY EMAIL
+// VERIFY EMAIL (عبر رابط)
 // ════════════════════════════════════════
 const verifyEmail = async (token, lang) => {
 
   const user = await prisma.user.findFirst({
     where: {
-      emailVerificationToken: token,
+      emailVerificationToken:  token,
       emailVerificationExpiry: { gt: new Date() }
     }
   });
 
   if (!user) {
-    // للـ debugging: اطبع الرمز المرسل
-    console.log(`❌ رمز التحقق فاشل:`);
-    console.log(`   الرمز المرسل: ${token.substring(0, 20)}...`);
-    console.log(`   الوقت الحالي: ${new Date()}`);
-    
     const err = new Error(t('INVALID_TOKEN', lang));
     err.statusCode = 400;
     err.code = 'INVALID_TOKEN';
@@ -73,15 +68,41 @@ const verifyEmail = async (token, lang) => {
   await prisma.user.update({
     where: { id: user.id },
     data: {
-      isEmailVerified: true,
-      emailVerificationToken: null,
+      isEmailVerified:         true,
+      emailVerificationToken:  null,
       emailVerificationExpiry: null,
     }
   });
 
   console.log(`✅ تم تأكيد الإيميل: ${user.email}`);
-
   return { message: lang === 'ar' ? 'تم تأكيد الإيميل ✅' : 'Email verified ✅' };
+};
+
+// ════════════════════════════════════════
+// DEV VERIFY (يدوي - للتطوير فقط)
+// ════════════════════════════════════════
+const devVerify = async (email, lang) => {
+
+  const user = await prisma.user.findUnique({ where: { email } });
+
+  if (!user) {
+    const err = new Error(t('NOT_FOUND', lang));
+    err.statusCode = 404;
+    err.code = 'NOT_FOUND';
+    throw err;
+  }
+
+  await prisma.user.update({
+    where: { email },
+    data: {
+      isEmailVerified:         true,
+      emailVerificationToken:  null,
+      emailVerificationExpiry: null,
+    }
+  });
+
+  console.log(`✅ [DEV] تم تأكيد الإيميل يدوياً: ${email}`);
+  return true;
 };
 
 // ════════════════════════════════════════
@@ -114,8 +135,8 @@ const login = async ({ email, password }, lang) => {
   }
 
   const payload      = { id: user.id, email: user.email, role: user.role };
-  const accessToken  = jwt.sign(payload, process.env.JWT_SECRET,        { expiresIn: '15m' });
-  const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d'  });
+  const accessToken  = jwt.sign(payload, process.env.JWT_SECRET,         { expiresIn: '15m' });
+  const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET,  { expiresIn: '7d'  });
 
   return {
     accessToken,
@@ -128,9 +149,11 @@ const login = async ({ email, password }, lang) => {
 // REFRESH
 // ════════════════════════════════════════
 const refresh = async (refreshToken, lang) => {
+
   if (!refreshToken) {
     const err = new Error(t('UNAUTHORIZED', lang));
     err.statusCode = 401;
+    err.code = 'UNAUTHORIZED';
     throw err;
   }
 
@@ -155,9 +178,9 @@ const refresh = async (refreshToken, lang) => {
 // ════════════════════════════════════════
 const getMe = async (userId) => {
   return await prisma.user.findUnique({
-    where: { id: userId },
+    where:  { id: userId },
     select: { id: true, email: true, fullName: true, role: true, createdAt: true }
   });
 };
 
-module.exports = { register, verifyEmail, login, refresh, getMe };
+module.exports = { register, verifyEmail, devVerify, login, refresh, getMe };

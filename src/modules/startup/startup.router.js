@@ -4,21 +4,52 @@ const router     = express.Router();
 const controller = require('./startup.controller');
 const { authenticate, authorize } = require('../../common/auth.middleware');
 const asyncHandler = require('../../common/asyncHandler');
+
 // ════════════════════════════════════════
 // المسارات
 // ════════════════════════════════════════
 
-// إنشاء startup — يحتاج تسجيل دخول
-router.post('/', authenticate, asyncHandler(controller.create));
+// إنشاء startup
+router.post('/',
+  authenticate,
+  asyncHandler(controller.create)
+);
 
-// جلب startup الخاص بي — يحتاج تسجيل دخول
-// مهم: /my قبل /:id حتى لا يُفسَّر "my" كـ ID
-router.get('/my', authenticate, asyncHandler(controller.getMyStartup));
+// جلب startup الخاص بي
+// مهم: /my قبل /:slug حتى لا يُفسَّر "my" كـ slug
+router.get('/my',
+  authenticate,
+  asyncHandler(controller.getMyStartup)
+);
 
-// قائمة الشركات للجمهور — لا يحتاج تسجيل
-router.get('/', asyncHandler(controller.getAll));
+// قائمة الشركات للجمهور
+router.get('/',
+  asyncHandler(controller.getAll)
+);
 
-// موافقة الأدمن — يحتاج تسجيل دخول + دور admin
-router.patch('/:id/approve', authenticate, authorize('admin'), asyncHandler(controller.approveStartup));
+// جلب startup بالـ slug — للجمهور
+router.get('/:slug',
+  asyncHandler(controller.getBySlug)
+);
+
+// تعديل startup — صاحبه فقط
+router.patch('/:id',
+  authenticate,
+  asyncHandler(controller.updateStartup)
+);
+
+// موافقة الأدمن
+router.patch('/:id/approve',
+  authenticate,
+  authorize('admin'),
+  asyncHandler(controller.approveStartup)
+);
+
+// تعليق الأدمن
+router.patch('/:id/suspend',
+  authenticate,
+  authorize('admin'),
+  asyncHandler(controller.suspendStartup)
+);
 
 module.exports = router;
