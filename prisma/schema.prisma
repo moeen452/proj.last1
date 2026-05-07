@@ -21,30 +21,66 @@ model User {
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
 
-  startup       Startup?
-  subscriptions UserSubscription[]
-  notifications Notification[]
+  startup        Startup?
+  subscriptions  UserSubscription[]
+  notifications  Notification[]
+  followedStartups Follow[]
 
   @@map("users")
 }
 
 model Startup {
-  id             Int       @id @default(autoincrement())
-  userId         Int       @unique
-  name           String
-  slug           String    @unique
-  description    String?
-  approvalStatus String    @default("pending")
-  approvedAt     DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id               Int       @id @default(autoincrement())
+  userId           Int       @unique
+  name             String
+  slug             String    @unique
+  category         String?
+  description      String?
+  story            String?
+  team             String?
+  isSuccessStory   Boolean   @default(false)
+  successHighlights String?
+  approvalStatus   String    @default("pending")
+  approvedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   user          User                     @relation(fields: [userId], references: [id])
   brands        Brand[]
   website       Website?
   brandRequests BrandGenerationRequest[]
+  inquiries     ContactInquiry[]
+  followers     Follow[]
+  notifications  Notification[]
 
   @@map("startups")
+}
+
+model Follow {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  startupId  Int
+  createdAt  DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id])
+  startup Startup @relation(fields: [startupId], references: [id])
+
+  @@unique([userId, startupId])
+  @@map("follows")
+}
+
+model ContactInquiry {
+  id         Int      @id @default(autoincrement())
+  startupId  Int
+  name       String
+  email      String
+  message    String
+  status     String   @default("pending")
+  createdAt  DateTime @default(now())
+
+  startup Startup @relation(fields: [startupId], references: [id])
+
+  @@map("contact_inquiries")
 }
 
 model Brand {
@@ -133,12 +169,14 @@ model UserSubscription {
 model Notification {
   id        Int      @id @default(autoincrement())
   userId    Int
+  startupId Int?
   type      String
   message   String
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
+  user    User     @relation(fields: [userId], references: [id])
+  startup Startup? @relation(fields: [startupId], references: [id])
 
   @@map("notifications")
 }
