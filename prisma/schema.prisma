@@ -18,32 +18,64 @@ model User {
   emailVerificationExpiry DateTime?
   passwordResetToken      String?
   passwordResetExpiry     DateTime?
+  passwordResetCode       String?
+  preferredLanguage       String    @default("ar")
+  privacySettings         String?   // تخزين JSON كـ string
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
 
-  startup        Startup?
-  subscriptions  UserSubscription[]
-  notifications  Notification[]
+  startup          Startup?
+  subscriptions    UserSubscription[]
+  notifications    Notification[]
   followedStartups Follow[]
+  favorites        Favorite[]
+  investments      Investment[]
+  consultationSlots ConsultationSlot[]
+  consultationBookings ConsultationBooking[]
+  eventRegistrations EventRegistration[]
+  jobApplications  JobApplication[]
+  trainingRegistrations TrainingRegistration[]
+  refreshTokens    RefreshToken[]
 
   @@map("users")
 }
 
 model Startup {
-  id               Int       @id @default(autoincrement())
-  userId           Int       @unique
-  name             String
-  slug             String    @unique
-  category         String?
-  description      String?
-  story            String?
-  team             String?
-  isSuccessStory   Boolean   @default(false)
+  id                Int       @id @default(autoincrement())
+  userId            Int       @unique
+  name              String
+  slug              String    @unique
+  category          String?
+  description       String?
+  story             String?
+  team              String?
+  isSuccessStory    Boolean   @default(false)
   successHighlights String?
-  approvalStatus   String    @default("pending")
-  approvedAt       DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  approvalStatus    String    @default("pending")
+  approvedAt        DateTime?
+  rating            Float     @default(0)
+  reviewsCount      Int       @default(0) // تم التعديل: إضافة حرف s ليطابق كود الـ Service تماماً (reviewsCount)
+  email             String?
+  phone             String?
+  address           String?
+  websiteUrl        String?
+  coverUrl          String?
+  logoUrl           String?
+  foundedYear       String?
+  location          String?
+  vision            String?
+  mission           String?
+  featuredImage     String?
+  stage             String?
+  technologies      String?
+  services          String?   // تخزين JSON array كـ string
+  officeHours       String?
+  photos            String?
+  isFeatured        Boolean   @default(false)
+  whatsappNumber    String?
+  followersCount    Int       @default(0)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   user          User                     @relation(fields: [userId], references: [id])
   brands        Brand[]
@@ -51,16 +83,88 @@ model Startup {
   brandRequests BrandGenerationRequest[]
   inquiries     ContactInquiry[]
   followers     Follow[]
-  notifications  Notification[]
+  favorites     Favorite[]
+  fundingRounds FundingRound[]
+  investments    Investment[]
+  notifications Notification[]
+  news          NewsArticle[]            // تم التعديل: تسمية الحقل news بدلاً من newsArticles ليطابق كود الـ Service تماماً
 
   @@map("startups")
 }
 
+model Category {
+  id          Int       @id @default(autoincrement())
+  name        String
+  displayName String
+  slug        String    @unique
+
+  @@map("categories")
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  startupId Int
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id])
+  startup Startup @relation(fields: [startupId], references: [id])
+
+  @@unique([userId, startupId])
+  @@map("favorites")
+}
+
+model Event {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  category    String?
+  type        String?
+  location    String?
+  date        DateTime?
+  time        String?
+  price       String?
+  isOnline    Boolean  @default(false)
+  status      String?
+  tags        String?  // JSON array or comma-separated
+  imageUrl    String?
+  isFeatured  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  registrations EventRegistration[]
+
+  @@map("events")
+}
+
+model SupportMessage {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  subject   String
+  message   String
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+
+  @@map("support_messages")
+}
+
+model FundingRound {
+  id          Int      @id @default(autoincrement())
+  startupId   Int
+  roundType   String
+  amount      String
+  roundDate   DateTime?
+  createdAt   DateTime @default(now())
+
+  startup Startup @relation(fields: [startupId], references: [id])
+
+  @@map("funding_rounds")
+}
+
 model Follow {
-  id         Int      @id @default(autoincrement())
-  userId     Int
-  startupId  Int
-  createdAt  DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  startupId Int
+  createdAt DateTime @default(now())
 
   user    User    @relation(fields: [userId], references: [id])
   startup Startup @relation(fields: [startupId], references: [id])
@@ -70,13 +174,13 @@ model Follow {
 }
 
 model ContactInquiry {
-  id         Int      @id @default(autoincrement())
-  startupId  Int
-  name       String
-  email      String
-  message    String
-  status     String   @default("pending")
-  createdAt  DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  startupId Int
+  name      String
+  email     String
+  message   String
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
 
   startup Startup @relation(fields: [startupId], references: [id])
 
@@ -109,12 +213,12 @@ model BrandGenerationRequest {
 }
 
 model Website {
-  id           Int       @id @default(autoincrement())
-  startupId    Int       @unique
-  isPublished  Boolean   @default(false)
+  id           Int              @id @default(autoincrement())
+  startupId    Int              @unique
+  isPublished  Boolean          @default(false)
   publishedUrl String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
   startup  Startup          @relation(fields: [startupId], references: [id])
   sections WebsiteSection[]
@@ -170,7 +274,7 @@ model Notification {
   id        Int      @id @default(autoincrement())
   userId    Int
   startupId Int?
-  type      String
+  type      String   // "follow", "news", "message"
   message   String
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
@@ -179,4 +283,123 @@ model Notification {
   startup Startup? @relation(fields: [startupId], references: [id])
 
   @@map("notifications")
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  userAgent String?
+  ipAddress String?
+  isActive  Boolean  @default(true)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("refresh_tokens")
+}
+
+model NewsArticle {
+  id          Int      @id @default(autoincrement())
+  startupId   Int
+  title       String
+  summary     String?
+  content     String
+  author      String
+  imageUrl    String?
+  category    String?
+  sourceCompany String?
+  views       Int      @default(0)
+  tags        String?  // تخزين كـ string JSON array أو نص مفصول بفواصل
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  startup Startup @relation(fields: [startupId], references: [id])
+
+  @@map("news_articles")
+}
+
+model Investment {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  startupId  Int
+  amount     String
+  shares     Float?
+  note       String?
+  createdAt  DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id])
+  startup Startup @relation(fields: [startupId], references: [id])
+
+  @@map("investments")
+}
+
+model ConsultationSlot {
+  id           Int      @id @default(autoincrement())
+  consultantId Int
+  startTime    DateTime
+  endTime      DateTime
+  isBooked     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  consultant User @relation(fields: [consultantId], references: [id])
+  bookings ConsultationBooking[]
+
+  @@map("consultation_slots")
+}
+
+model ConsultationBooking {
+  id        Int      @id @default(autoincrement())
+  slotId    Int
+  userId    Int
+  status    String   @default("booked")
+  createdAt DateTime @default(now())
+
+  slot ConsultationSlot @relation(fields: [slotId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("consultation_bookings")
+}
+
+model EventRegistration {
+  id        Int      @id @default(autoincrement())
+  eventId   Int
+  userId    Int
+  status    String   @default("registered")
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@unique([eventId, userId])
+  @@map("event_registrations")
+}
+
+model JobApplication {
+  id         Int      @id @default(autoincrement())
+  jobId      Int
+  userId     Int
+  resumeUrl  String?
+  coverLetter String?
+  status     String   @default("applied")
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("job_applications")
+}
+
+model TrainingRegistration {
+  id         Int      @id @default(autoincrement())
+  trainingId Int
+  userId     Int
+  status     String   @default("registered")
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([trainingId, userId])
+  @@map("training_registrations")
 }

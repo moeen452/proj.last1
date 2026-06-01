@@ -1,115 +1,131 @@
-// src/modules/auth/auth.controller.js
-const service = require('./auth.service');
+﻿const service = require('./auth.service');
+const { t } = require('../../common/i18n');
 
-// ── مساعد يقرأ اللغة من الـ Header ──────────────
 const getLang = (req) => {
   const lang = req.headers['accept-language'];
   return lang && lang.startsWith('ar') ? 'ar' : 'en';
 };
 
-// ════════════════════════════════════════
-// REGISTER
-// ════════════════════════════════════════
-const register = async (req, res, next) => {
+const signup = async (req, res, next) => {
   try {
     const lang = getLang(req);
-    const { fullName, email, password } = req.body;
-    const user = await service.register({ fullName, email, password }, lang);
-    res.status(201).json({
-      success: true,
-      data: {
-        user,
-        message: lang === 'ar'
-          ? 'تم التسجيل. تحقق من بريدك.'
-          : 'Registered. Please verify your email.'
-      }
-    });
-  } catch (err) { next(err); }
+    const result = await service.signup(req.body, req.headers['user-agent'], req.ip, lang);
+    res.status(201).json({ success: true, message: t('SIGNUP_SUCCESS', lang), data: result });
+  } catch (err) {
+    next(err);
+  }
 };
 
-// ════════════════════════════════════════
-// VERIFY EMAIL (عبر رابط)
-// ════════════════════════════════════════
-const verifyEmail = async (req, res, next) => {
-  try {
-    const lang   = getLang(req);
-    const result = await service.verifyEmail(req.query.token, lang);
-    res.json({ success: true, data: result });
-  } catch (err) { next(err); }
-};
-
-// ════════════════════════════════════════
-// DEV VERIFY (يدوي للتطوير فقط)
-// ════════════════════════════════════════
-const devVerify = async (req, res, next) => {
-  try {
-    const lang = getLang(req);
-    const { email } = req.body;
-    await service.devVerify(email, lang);
-    res.json({
-      success: true,
-      data: {
-        message: lang === 'ar'
-          ? 'تم تأكيد الإيميل بنجاح ✅'
-          : 'Email verified successfully ✅'
-      }
-    });
-  } catch (err) { next(err); }
-};
-
-// ════════════════════════════════════════
-// LOGIN
-// ════════════════════════════════════════
 const login = async (req, res, next) => {
   try {
     const lang = getLang(req);
-    const { email, password } = req.body;
-    const { accessToken, refreshToken, user } = await service.login({ email, password }, lang);
-
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure:   process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge:   7 * 24 * 60 * 60 * 1000
-    });
-
-    res.json({ success: true, data: { accessToken, user } });
-  } catch (err) { next(err); }
+    const result = await service.login(req.body, req.headers['user-agent'], req.ip, lang);
+    res.json({ success: true, message: t('LOGIN_SUCCESS', lang), data: result });
+  } catch (err) {
+    next(err);
+  }
 };
 
-// ════════════════════════════════════════
-// REFRESH
-// ════════════════════════════════════════
-const refresh = async (req, res, next) => {
-  try {
-    const lang   = getLang(req);
-    const result = await service.refresh(req.cookies.refreshToken, lang);
-    res.json({ success: true, data: result });
-  } catch (err) { next(err); }
-};
-
-// ════════════════════════════════════════
-// LOGOUT
-// ════════════════════════════════════════
 const logout = async (req, res, next) => {
   try {
     const lang = getLang(req);
-    res.clearCookie('refreshToken');
-    res.json({
-      success: true,
-      data: { message: lang === 'ar' ? 'تم الخروج بنجاح' : 'Logged out successfully' }
-    });
-  } catch (err) { next(err); }
+    await service.logout(req.user.id, req.body.refreshToken, lang);
+    res.json({ success: true, message: t('LOGOUT_SUCCESS', lang) });
+  } catch (err) {
+    next(err);
+  }
 };
 
-// ════════════════════════════════════════
-// GET ME
-// ════════════════════════════════════════
-const getMe = async (req, res, next) => {
+const refreshAccessToken = async (req, res, next) => {
   try {
-    const user = await service.getMe(req.user.id);
-    res.json({ success: true, data: { user } });
-  } catch (err) { next(err); }
+    const lang = getLang(req);
+    const result = await service.refreshAccessToken(req.body.refreshToken, req.headers.authorization, req.headers['user-agent'], req.ip, lang);
+    res.json({ success: true, message: t('TOKEN_REFRESHED', lang), data: result });
+  } catch (err) {
+    next(err);
+  }
 };
 
-module.exports = { register, verifyEmail, devVerify, login, refresh, logout, getMe };
+const logoutAllDevices = async (req, res, next) => {
+  try {ه
+    const lang = getLang(req);
+    await service.logoutAllDevices(req.user.id, lang);
+    res.json({ success: true, message: t('LOGOUT_ALL_DEVICES_SUCCESS', lang) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getActiveSessions = async (req, res, next) => {
+  try {
+    const sessions = await service.getActiveSessions(req.user.id);
+    res.json({ success: true, data: { sessions } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const revokeSession = async (req, res, next) => {
+  try {
+    const lang = getLang(req);
+    const sessionId = req.params.sessionId;
+    await service.revokeSession(req.user.id, sessionId, lang);
+    res.json({ success: true, message: t('SESSION_REVOKED', lang) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const forgotPassword = async (req, res, next) => {
+  try {
+    const lang = getLang(req);
+    await service.forgotPassword(req.body.email, lang);
+    res.json({ success: true, message: t('PASSWORD_RESET_CODE_SENT', lang) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const checkResetCode = async (req, res, next) => {
+  try {
+    const lang = getLang(req);
+    const result = await service.checkResetCode(req.body.email, req.body.resetCode, lang);
+    res.json({ success: true, message: t('CODE_VERIFIED', lang), data: result });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const resetPassword = async (req, res, next) => {
+  try {
+    const lang = getLang(req);
+    const result = await service.resetPassword(req.body.resetToken, req.body.password, req.body.passwordConfirm, req.headers['user-agent'], req.ip, lang);
+    res.json({ success: true, message: t('PASSWORD_RESET_SUCCESS', lang), data: result });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updatePassword = async (req, res, next) => {
+  try {
+    const lang = getLang(req);
+    const result = await service.updatePassword(req.user.id, req.body.passwordCurrent, req.body.password, req.body.passwordConfirm, req.headers['user-agent'], req.ip, lang);
+    res.json({ success: true, message: t('PASSWORD_UPDATE_SUCCESS', lang), data: result });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  signup,
+  login,
+  logout,
+  refreshAccessToken,
+  logoutAllDevices,
+  getActiveSessions,
+  revokeSession,
+  forgotPassword,
+  checkResetCode,
+  resetPassword,
+  updatePassword,
+};

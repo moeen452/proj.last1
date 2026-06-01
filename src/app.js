@@ -18,7 +18,6 @@ app.use(cookieParser());
 // ── Routes ─────────────────────────────────────
 const modules = require('./modules');
 app.use('/api/v1/auth',     modules.auth);
-app.use('/api/v1/startups', modules.startup);
 app.use('/api/v1/audience', modules.audience);
 // app.use('/api/v1/brands',   modules.brands);
 

@@ -32,6 +32,20 @@ const authenticate = (req, res, next) => {
   }
 };
 
+const optionalAuthenticate = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+  const token = authHeader.split(' ')[1];
+  try {
+    req.user = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (_) {
+    // ignore
+  }
+  next();
+};
+
 const authorize = (...roles) => (req, res, next) => {
   const lang = getLang(req);
   if (!roles.includes(req.user.role)) {
@@ -43,4 +57,4 @@ const authorize = (...roles) => (req, res, next) => {
   next();
 };
 
-module.exports = { authenticate, authorize };
+module.exports = { authenticate, optionalAuthenticate, authorize };
