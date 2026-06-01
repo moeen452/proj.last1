@@ -36,6 +36,7 @@ model User {
   jobApplications  JobApplication[]
   trainingRegistrations TrainingRegistration[]
   refreshTokens    RefreshToken[]
+  newsLikes        NewsLike[]
 
   @@map("users")
 }
@@ -344,14 +345,31 @@ model NewsArticle {
   category    String?
   sourceCompany String?
   views       Int      @default(0)
+  likes       Int      @default(0)
+  comments    Int      @default(0)
+  shares      Int      @default(0)
   tags        String?
   publishedAt DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  startup Startup @relation(fields: [startupId], references: [id])
+  startup   Startup     @relation(fields: [startupId], references: [id])
+  userLikes NewsLike[]
 
   @@map("news_articles")
+}
+
+model NewsLike {
+  id        Int      @id @default(autoincrement())
+  newsId    Int
+  userId    Int
+  createdAt DateTime @default(now())
+
+  news NewsArticle @relation(fields: [newsId], references: [id], onDelete: Cascade)
+  user User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([newsId, userId])
+  @@map("news_likes")
 }
 
 model Investment {

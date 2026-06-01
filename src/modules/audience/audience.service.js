@@ -574,6 +574,74 @@ const getSuccessStories = async () => {
   });
 };
 
+// ==================== NEWS INTERACTIONS ====================
+const likeNews = async (userId, newsId) => {
+  const newsExists = await prisma.newsArticle.findUnique({ where: { id: Number(newsId) } });
+  if (!newsExists) {
+    const error = new Error('News not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const existingLike = await prisma.newsLike.findUnique({
+    where: { newsId_userId: { newsId: Number(newsId), userId: Number(userId) } }
+  });
+
+  if (existingLike) {
+    // Unlike
+    await prisma.newsLike.delete({
+      where: { id: existingLike.id }
+    });
+    await prisma.newsArticle.update({
+      where: { id: Number(newsId) },
+      data: { likes: { decrement: 1 } }
+    });
+    return { liked: false };
+  } else {
+    // Like
+    await prisma.newsLike.create({
+      data: { newsId: Number(newsId), userId: Number(userId) }
+    });
+    await prisma.newsArticle.update({
+      where: { id: Number(newsId) },
+      data: { likes: { increment: 1 } }
+    });
+    return { liked: true };
+  }
+};
+
+const commentOnNews = async (userId, newsId) => {
+  const newsExists = await prisma.newsArticle.findUnique({ where: { id: Number(newsId) } });
+  if (!newsExists) {
+    const error = new Error('News not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  await prisma.newsArticle.update({
+    where: { id: Number(newsId) },
+    data: { comments: { increment: 1 } }
+  });
+
+  return { message: 'Comment counted successfully', comments: newsExists.comments + 1 };
+};
+
+const shareNews = async (userId, newsId) => {
+  const newsExists = await prisma.newsArticle.findUnique({ where: { id: Number(newsId) } });
+  if (!newsExists) {
+    const error = new Error('News not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  await prisma.newsArticle.update({
+    where: { id: Number(newsId) },
+    data: { shares: { increment: 1 } }
+  });
+
+  return { message: 'Share counted successfully', shares: newsExists.shares + 1 };
+};
+
 module.exports = {
   findApprovedStartups,
   getFeaturedStartups,
@@ -608,5 +676,8 @@ module.exports = {
   getNewsFeed,
   getNewsDetails,
   getSuccessStories,
-  getStartupFundingRounds
+  getStartupFundingRounds,
+  likeNews,
+  commentOnNews,
+  shareNews
 };

@@ -50,6 +50,11 @@ router.put('/notifications/mark-read', asyncHandler(controller.markAllNotificati
 router.post('/notifications/:notificationId/mark-read', asyncHandler(controller.markNotificationRead));
 router.delete('/notifications/:notificationId', asyncHandler(controller.deleteNotification));
 
+// News Interactions
+router.post('/news/:newsId/like', asyncHandler(controller.likeNews));
+router.post('/news/:newsId/comment', asyncHandler(controller.commentOnNews));
+router.post('/news/:newsId/share', asyncHandler(controller.shareNews));
+
 // Hub
 router.post('/hub/events/:eventId/register', asyncHandler(controller.registerForEvent));
 router.post('/hub/jobs/:jobId/apply', asyncHandler(controller.applyForJob));

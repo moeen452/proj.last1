@@ -334,6 +334,44 @@ const getSuccessStories = async (req, res, next) => {
     res.json({ success: true, data: result });
   } catch (err) { next(err); }
 };
+
+// ==================== NEWS INTERACTIONS ====================
+const likeNews = async (req, res, next) => {
+  try {
+    const userId = req.user ? req.user.id : null;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: { message: 'Unauthorized' } });
+    }
+    const { newsId } = req.params;
+    const result = await service.likeNews(userId, newsId);
+    res.json({ success: true, data: result });
+  } catch (err) { next(err); }
+};
+
+const commentOnNews = async (req, res, next) => {
+  try {
+    const userId = req.user ? req.user.id : null;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: { message: 'Unauthorized' } });
+    }
+    const { newsId } = req.params;
+    const result = await service.commentOnNews(userId, newsId);
+    res.json({ success: true, data: result });
+  } catch (err) { next(err); }
+};
+
+const shareNews = async (req, res, next) => {
+  try {
+    const userId = req.user ? req.user.id : null;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: { message: 'Unauthorized' } });
+    }
+    const { newsId } = req.params;
+    const result = await service.shareNews(userId, newsId);
+    res.json({ success: true, data: result });
+  } catch (err) { next(err); }
+};
+
 const getStartupFundingRounds = async (req, res, next) => {
   try {
     const { startupId } = req.params;
@@ -379,5 +417,8 @@ module.exports = {
   getNewsFeed,
   getNewsDetails,
   getSuccessStories,
-  getStartupFundingRounds
+  getStartupFundingRounds,
+  likeNews,
+  commentOnNews,
+  shareNews
 };
