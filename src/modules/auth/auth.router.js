@@ -2,11 +2,11 @@
 const router = express.Router();
 const controller = require('./auth.controller');
 const asyncHandler = require('../../common/asyncHandler');
-const { authenticate } = require('../../common/auth.middleware');
+const { authenticate, optionalAuthenticate } = require('../../common/auth.middleware');
 
 router.post('/signup', asyncHandler(controller.signup));
 router.post('/login', asyncHandler(controller.login));
-router.post('/logout', authenticate, asyncHandler(controller.logout));
+router.post('/logout', optionalAuthenticate, asyncHandler(controller.logout));
 router.post('/refreshToken', asyncHandler(controller.refreshAccessToken));
 router.post('/logout-all', authenticate, asyncHandler(controller.logoutAllDevices));
 router.get('/sessions', authenticate, asyncHandler(controller.getActiveSessions));

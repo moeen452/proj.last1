@@ -116,12 +116,18 @@ const logout = async (userId, refreshToken, lang = 'en') => {
   if (!refreshToken) {
     return { success: true };
   }
+
+  const where = {
+    token: refreshToken,
+    isActive: true,
+  };
+
+  if (userId) {
+    where.userId = Number(userId);
+  }
+
   await prisma.refreshToken.updateMany({
-    where: {
-      token: refreshToken,
-      userId: Number(userId),
-      isActive: true,
-    },
+    where,
     data: { isActive: false },
   });
   return { success: true };

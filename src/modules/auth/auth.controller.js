@@ -26,11 +26,15 @@ const login = async (req, res, next) => {
   }
 };
 
+const getRefreshTokenFromRequest = (req) => {
+  return req.body?.refreshToken || req.cookies?.refreshToken || req.headers['x-refresh-token'] || req.headers['refresh-token'];
+};
+
 const logout = async (req, res, next) => {
   try {
     const lang = getLang(req);
-    const { refreshToken } = req.body || {};
-    await service.logout(req.user.id, refreshToken, lang);
+    const refreshToken = getRefreshTokenFromRequest(req);
+    await service.logout(req.user?.id, refreshToken, lang);
     res.json({ success: true, message: t('LOGOUT_SUCCESS', lang) });
   } catch (err) {
     next(err);
@@ -40,7 +44,8 @@ const logout = async (req, res, next) => {
 const refreshAccessToken = async (req, res, next) => {
   try {
     const lang = getLang(req);
-    const result = await service.refreshAccessToken(req.body.refreshToken, req.headers.authorization, req.headers['user-agent'], req.ip, lang);
+    const refreshToken = getRefreshTokenFromRequest(req);
+    const result = await service.refreshAccessToken(refreshToken, req.headers.authorization, req.headers['user-agent'], req.ip, lang);
     res.json({ success: true, message: t('TOKEN_REFRESHED', lang), data: result });
   } catch (err) {
     next(err);
@@ -48,7 +53,7 @@ const refreshAccessToken = async (req, res, next) => {
 };
 
 const logoutAllDevices = async (req, res, next) => {
-  try {ه
+  try {
     const lang = getLang(req);
     await service.logoutAllDevices(req.user.id, lang);
     res.json({ success: true, message: t('LOGOUT_ALL_DEVICES_SUCCESS', lang) });

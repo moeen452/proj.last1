@@ -627,19 +627,29 @@ const commentOnNews = async (userId, newsId) => {
 };
 
 const shareNews = async (userId, newsId) => {
-  const newsExists = await prisma.newsArticle.findUnique({ where: { id: Number(newsId) } });
+  // التحقق من وجود الخبر
+  const newsExists = await prisma.newsArticle.findUnique({
+    where: { id: Number(newsId) }
+  });
   if (!newsExists) {
     const error = new Error('News not found');
     error.statusCode = 404;
     throw error;
   }
 
+  // زيادة عداد المشاركات
   await prisma.newsArticle.update({
     where: { id: Number(newsId) },
     data: { shares: { increment: 1 } }
   });
 
-  return { message: 'Share counted successfully', shares: newsExists.shares + 1 };
+  // جلب القيمة الجديدة لـ shares
+  const updatedNews = await prisma.newsArticle.findUnique({
+    where: { id: Number(newsId) },
+    select: { shares: true }
+  });
+
+  return { message: 'Share counted successfully', shares: updatedNews.shares };
 };
 
 module.exports = {
