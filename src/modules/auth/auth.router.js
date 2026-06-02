@@ -6,7 +6,7 @@ const { authenticate } = require('../../common/auth.middleware');
 
 router.post('/signup', asyncHandler(controller.signup));
 router.post('/login', asyncHandler(controller.login));
-router.get('/logout', authenticate, asyncHandler(controller.logout));
+router.post('/logout', authenticate, asyncHandler(controller.logout));
 router.post('/refreshToken', asyncHandler(controller.refreshAccessToken));
 router.post('/logout-all', authenticate, asyncHandler(controller.logoutAllDevices));
 router.get('/sessions', authenticate, asyncHandler(controller.getActiveSessions));

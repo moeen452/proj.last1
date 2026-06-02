@@ -29,7 +29,8 @@ const login = async (req, res, next) => {
 const logout = async (req, res, next) => {
   try {
     const lang = getLang(req);
-    await service.logout(req.user.id, req.body.refreshToken, lang);
+    const { refreshToken } = req.body || {};
+    await service.logout(req.user.id, refreshToken, lang);
     res.json({ success: true, message: t('LOGOUT_SUCCESS', lang) });
   } catch (err) {
     next(err);

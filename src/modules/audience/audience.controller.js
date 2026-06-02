@@ -229,7 +229,11 @@ const investInStartup = async (req, res, next) => {
 const getAvailableSlots = async (req, res, next) => {
   try {
     const { consultantId, from, to } = req.query;
-    const slots = await service.getAvailableSlots(Number(consultantId) || req.user.id, {
+    const id = Number(consultantId) || (req.user ? req.user.id : null);
+    if (!id) {
+      return res.status(400).json({ success: false, error: { message: 'consultantId is required' } });
+    }
+    const slots = await service.getAvailableSlots(id, {
       from,
       to
     });
